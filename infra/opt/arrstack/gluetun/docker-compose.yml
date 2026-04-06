@@ -1,0 +1,91 @@
+services:
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    networks:
+      - arrnet
+    ports:
+      - "18080:18080"
+      - "6881:6881/tcp"
+      - "6881:6881/udp"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - VPN_TYPE=openvpn
+      - OPENVPN_USER=${OPENVPN_USER}
+      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
+      - OPENVPN_PROTOCOL=udp
+      - SERVER_COUNTRIES=United States
+      - PORT_FORWARD_ONLY=on
+      - VPN_PORT_FORWARDING=on
+      - FIREWALL=on
+      - FIREWALL_INPUT_PORTS=18080,6881
+      - HTTP_CONTROL_SERVER_LOG=on
+      - HTTP_CONTROL_SERVER_ADDRESS=:8000
+      - HEALTH_RESTART_VPN=on
+      - DNS_SERVER=on
+      - DNS_UPSTREAM_RESOLVER_TYPE=DoT
+      - DNS_UPSTREAM_RESOLVERS=cloudflare
+      - DNS_UPSTREAM_IPV6=off
+      - DNS_CACHING=on
+      - BLOCK_MALICIOUS=on
+      - BLOCK_SURVEILLANCE=off
+      - BLOCK_ADS=off
+      - PUBLICIP_ENABLED=on
+      - VPN_PORT_FORWARDING_UP_COMMAND=/bin/sh -c /gluetun/portforward-qb.sh
+      - VPN_PORT_FORWARDING_DOWN_COMMAND=/bin/sh -c /gluetun/portforward-down-qb.sh
+    env_file:
+      - .env
+    volumes:
+      - /opt/arrstack/gluetun:/gluetun
+    restart: unless-stopped
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+      - WEBUI_PORT=18080
+    volumes:
+      - /mnt/downloads:/downloads
+      - /opt/arrstack/qbittorrent:/config
+    restart: unless-stopped
+
+  torrent-watchdog:
+    image: python:3.12-alpine
+    container_name: torrent-watchdog
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+      - qbittorrent
+    working_dir: /app
+    command:
+      - /bin/sh
+      - -c
+      - pip install --no-cache-dir requests && python /app/watchdog.py
+    environment:
+      - QB_URL=http://127.0.0.1:18080
+      - GLUETUN_CONTROL_URL=http://127.0.0.1:8000
+      - LOOP_SECONDS=300
+      - STALL_MINUTES=20
+      - NEAR_END_PROGRESS=0.98
+      - MIN_DOWNLOAD_BPS=10240
+      - REANNOUNCE_RETRIES=2
+      - ROTATE_COOLDOWN_MINUTES=30
+    env_file:
+      - .env
+    volumes:
+      - /opt/arrstack/gluetun/watchdog:/app
+    restart: unless-stopped
+
+networks:
+  arrnet:
+    external: true
