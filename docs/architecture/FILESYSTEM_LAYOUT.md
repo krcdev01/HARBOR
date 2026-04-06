@@ -1,10 +1,17 @@
-# Filesystem Layout -- What storage exists and what is it used for?
+# Filesystem Layout
+
+## Overview
+
+This document defines the filesystem layout expected by a HARBOR deployment.
+
+It documents the logical storage roles and directory structure required by the platform. It does not prescribe specific host mount points, filesystems, disk models, or server-specific backup policy.
+
+---
 
 ## Media Storage
 
 ### TV Library
-Mount point: /mnt/tv  
-Filesystem: ext4
+Path: `/tv`  
 Purpose: Primary television series library.
 
 Managed by:
@@ -13,106 +20,107 @@ Managed by:
 
 Directory structure:
 
-/mnt/tv
-├── Videos (case-sensitive path required by existing Sonarr configuration)
-│   ├── Family TV 
-│   ├── Judgement 
-│   ├── New and Requested
-|   └── Series Shows
-│       ├── Adult Swim
-│       ├── Anime
-│       ├── Permanent Collection
-│       └── Star Trek
+```text
+/tv
+└── Videos
+    ├── Family TV
+    ├── Judgement
+    ├── New and Requested
+    └── Series Shows
+        ├── Adult Swim
+        ├── Anime
+        ├── Permanent Collection
+        └── Star Trek
+```
 
 Notes:
 
-Family TV
-Children and Family Shows; intended to be for children to watch independently 7 years or younger.
-
-Judgement  
-TV content under review for disposal.
-
-New and Requested
-Default Sonarr landing folder for new series episodes
-
-Series Shows  
-This is the core collection of Series Content that should be restorable from backup resoures.  These folders are self-explanatory.
+- `Videos` is a case-sensitive path and is required by the current Sonarr path model.
+- Folder names under `Videos` represent the expected organizational structure for the HARBOR TV library.
+- `Family TV` is intended for children and family-safe television content.
+- `Judgement` is a holding area for content under review for deletion.
+- `New and Requested` is the default landing area for newly imported television content.
+- `Series Shows` is the primary long-term series collection.
 
 ---
 
 ### Movie Library
-Mount point: /mnt/movies  
-Filesystem: ext4
+Path: `/movies`  
 Purpose: Primary movie library.
 
 Managed by:
-- Radarr (imports and organization)
+- Radarr (import and organization)
 - Jellyfin (playback)
 
 Directory structure:
 
-/mnt/movies
-├── videos
-│   ├── Family
-│   ├── Judgement
-│   ├── New and Requested
-│   └── Permanent Movies
-│       ├── Anime Movies
-│       ├── Evergreen
-│       ├── MCU The Infinity Saga
-│       └── Star Trek
+```text
+/movies
+└── videos
+    ├── Family
+    ├── Judgement
+    ├── New and Requested
+    └── Permanent Movies
+        ├── Anime Movies
+        ├── Evergreen
+        ├── MCU The Infinity Saga
+        └── Star Trek
+```
 
 Notes:
 
-Family
-Children and Family Movies; intended to be for children to watch indendently 7 years or younger.
-
-Judgement  
-Movies under review for disposal.
-
-New and Requested
-Default Radarr landing folder for new films.
-
-Permanent Movies 
-This is the core collection of Movies that should be restorable from backup resoures.  These folders are self-explanatory.
+- `videos` is intentionally lowercase and should remain consistent with the application path model.
+- `Family` is intended for children and family-safe films.
+- `Judgement` is a holding area for films under review for deletion.
+- `New and Requested` is the default landing area for newly imported films.
+- `Permanent Movies` is the primary long-term movie collection.
 
 ---
 
 ## Download Storage
 
 ### Downloads Root
-Mount point: /mnt/downloads
-Filesystem: ext4
-Purpose: qBittorrent download and seeding storage.
+Path: `/downloads`  
+Purpose: qBittorrent download, staging, and seeding storage.
 
 Structure:
 
-/mnt/downloads/incomplete  
-/mnt/downloads/complete/movies  
-/mnt/downloads/complete/tv  
-/mnt/downloads/complete/seed
-
-
+```text
+/downloads/incomplete
+/downloads/complete/movies
+/downloads/complete/tv
+/downloads/complete/seed
+```
 
 Directory roles:
 
-/mnt/downloads/incomplete  
-Active torrent downloads managed by qBittorrent.
+- `/downloads/incomplete`  
+  Active torrent downloads managed by qBittorrent.
 
-/mnt/downloads/complete/movies  
-Completed movie downloads staged for Radarr import.
+- `/downloads/complete/movies`  
+  Completed movie downloads staged for Radarr import.
 
-/mnt/downloads/complete/tv  
-Completed TV downloads staged for Sonarr import.
+- `/downloads/complete/tv`  
+  Completed television downloads staged for Sonarr import.
 
-/mnt/downloads/complete/seed  
-Permanent seeding storage for private trackers (e.g. MySpleen).
+- `/downloads/complete/seed`  
+  Persistent seeding storage for content that must remain available after import.
+
+---
 
 ## Media Lifecycle
 
 Typical media acquisition workflow:
 
-1. Torrent is downloaded to `/mnt/downloads/incomplete` by qBittorrent.
-2. After completion, files move to `/mnt/downloads/complete/movies` or `/mnt/downloads/complete/tv`.
+1. qBittorrent downloads content to `/downloads/incomplete`.
+2. After completion, content moves to `/downloads/complete/movies` or `/downloads/complete/tv`.
 3. Radarr or Sonarr imports the media into the appropriate library directory.
 4. Jellyfin scans the library and makes the content available for playback.
+
+---
+
+## Notes
+
+- This document describes the HARBOR filesystem model in logical terms.
+- Host-specific mount points, storage devices, and filesystem types belong in the Homeserver repository or another deployment-specific repository.
+- If a deployment uses different host paths, those paths must still map into the container/application paths documented here.

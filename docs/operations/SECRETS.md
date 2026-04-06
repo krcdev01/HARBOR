@@ -1,92 +1,63 @@
-CORSAIR Backup System
+# SECRETS.md
 
-Location:
-/root/.config/corsair/borg.env
+## Overview
 
-Purpose:
-Stores Borg repository passphrase for automated backups.
+This document defines environment variables and sensitive configuration required by this repository. Values must not be committed.
 
-Required variable:
-BORG_PASSPHRASE
+---
 
-Permissions:
-600 (root only)
-
-Gluetun Container
-
-Location:
-/opt/arrstack/gluetun/.env
+## Gluetun Container
 
 Purpose:
-Stores VPN provider credentials and environment configuration used by Gluetun and the torrent-watchdog.
+VPN connectivity and torrent network routing.
 
 Required variables:
 
 VPN Credentials
-
-VPN_SERVICE_PROVIDER
-VPN_TYPE
+- VPN_SERVICE_PROVIDER
+- VPN_TYPE
 
 VPN Account Credentials
-
-OPENVPN_USER
-OPENVPN_PASSWORD
+- OPENVPN_USER
+- OPENVPN_PASSWORD
 
 qBittorrent WebUI Credentials
-
-QB_USERNAME
-QB_PASSWORD
+- QB_USERNAME
+- QB_PASSWORD
 
 Gluetun Configuration
+- SERVER_COUNTRIES
+- FIREWALL
+- FIREWALL_INPUT_PORTS
 
-SERVER_COUNTRIES
-FIREWALL
-FIREWALL_INPUT_PORTS
+Notes:
+- These values must be supplied via environment variables or external `.env` files.
+- Files containing these values should be restricted to owner access (600 recommended).
 
-Permissions:
-600 recommended
+---
 
-Pi-hole
-
-Location:
-/srv/pihole/docker-compose.yml
-or /srv/pihole/.env if externalized later
+## Cloudflared Tunnel
 
 Purpose:
-Stores the Pi-hole web UI/API password.
+Provides outbound tunnel connectivity.
 
 Required variable:
-PIHOLE_WEBPASSWORD
+- CLOUDFLARED_TOKEN
 
-Permissions:
-600 recommended
+Notes:
+- Must not be committed to the repository.
+- Should be provided via environment variables or external configuration.
 
-Cloudflared Tunnel
+---
 
-Location:
-Environment variable used by:
-/srv/jellyfin/docker-compose.yml
+## Jellyfin Configuration
 
 Purpose:
-Stores the Cloudflare Tunnel authentication token used to expose services externally.
+Defines externally accessible server URL.
 
 Required variable:
-CLOUDFLARED_TOKEN
+- JELLYFIN_PUBLISHED_SERVER_URL
 
-Permissions:
-600 recommended if stored in .env
-
-Jellyfin Public Server URL
-
-Location:
-Environment variable used by:
-/srv/jellyfin/docker-compose.yml
-
-Purpose:
-Defines the public URL Jellyfin uses for external access and link generation.
-
-Required variable:
-JELLYFIN_PUBLISHED_SERVER_URL
-
-Permissions:
-Not a credential, but treated as sensitive configuration and not stored directly in the repository.
+Notes:
+- Not a credential, but treated as sensitive configuration.
+- Should not be hardcoded in repository files.

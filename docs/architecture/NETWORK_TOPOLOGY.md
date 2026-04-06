@@ -29,8 +29,6 @@ The following services publish ports directly to the host system:
 |--------|-----------|----------|---------|
 | Jellyfin | 8096 | TCP | Local web interface |
 | Jellyfin | 8920 | TCP | HTTPS interface |
-| Pi-hole | 53 | TCP/UDP | DNS service |
-| Pi-hole | 8080 | TCP | Pi-hole web interface |
 | Radarr | 7878 | TCP | Web interface |
 | Sonarr | 8989 | TCP | Web interface |
 | Prowlarr | 9696 | TCP | Web interface |
@@ -102,7 +100,7 @@ Network behavior:
 
 - ARR services communicate with each other over arrnet
 - qBittorrent and torrent-watchdog use Gluetun's network namespace
-- Jellyfin and Pi-hole operate with direct host port bindings
+- Jellyfin operates with direct host port bindings
 - cloudflared connects outbound to Cloudflare
 
 ---

@@ -1,95 +1,70 @@
-# Change Management
+# CHANGE_MANAGEMENT.md
 
 ## Purpose
 
-This document defines how changes to the server are made, tested, documented, and deployed. The goal is to maintain a stable system that can be rebuilt and recovered at any time.
+This document defines how changes to this repository are developed, tested, documented, and released.
 
-This server is operated by a single administrator. Change management exists to prevent untested or undocumented changes from breaking the system.
+The goal is to ensure changes are controlled, reproducible, and do not break deployment or operation.
 
 ---
 
 ## Change Philosophy
 
-The server is treated as a managed system, not a personal workstation.
-Changes are controlled to ensure stability, recoverability, and reproducibility.
+- The repository is the source of truth
+- Deployments should reflect the repository state
+- Changes must not introduce undocumented behavior
+- The system must remain reproducible from repository contents
 
-The repositories are the source of truth for how the system is built and configured.
-The running server should always match the repositories and documentation.
-
-If the server cannot be rebuilt from the repositories and documentation, the change process has failed.
+If the system cannot be deployed from the repository and documentation, the change process has failed.
 
 ---
 
 ## Change Process
 
-Change Management is a workflow in process of design.  The expected workflow is as follows:
-
-Develop → Validate → Commit → Test → Document → Deploy
+Develop → Validate → Commit → Test → Document → Release
 
 ### Develop
-
-All programmatic design and composition is to be built on local user workstations.
+Changes are created in a development environment.
 
 ### Validate
-
-All functionality developed on workstations is tested and debugged to ensure proper expected behavior prior to committing to the repository.
+Ensure functionality behaves as expected prior to commit.
 
 ### Commit
-
-Changes to infrastructure, applications, or configuration are committed to the appropriate repository:
-
-homeserver-infra
-homeserver-apps
-homeserver-docs
+Changes are committed to the repository.
 
 ### Test
-
-All changes are tested in the test environment (VM) before being deployed to production.
+Changes are tested in a clean deployment environment.
 
 ### Document
+Documentation is updated to reflect the change.
 
-Documentation is updated to reflect the change so that the system can be rebuilt and maintained in the future.
-
-### Deploy
-
-After testing, committing, and documenting, the change is deployed to the production server.
+### Release
+Changes are made available for deployment.
 
 ---
 
 ## Emergency Changes
 
-If the system is down or severely impaired, changes may be made directly to production to restore service.
+If a critical issue exists, changes may be applied immediately.
 
-After an emergency change:
-
-The change must be replicated in the test environment.
-The repositories must be updated.
-Documentation must be updated.
-The change must be committed.
-
-Production and repositories must be brought back into sync.
+Afterward:
+- the change must be committed
+- documentation must be updated
+- the change must be validated in a clean environment
 
 ---
 
 ## Rollback
 
-If a change causes problems in production, the system should be returned to the last known working state by:
-
-Reverting the change in Git, or
-Restoring previous configuration files, or
-Restoring from backup if necessary
-
-Changes should be reversible whenever possible.
+Rollback is performed by:
+- reverting commits
+- redeploying a previous known working state
 
 ---
 
 ## Summary
 
-- test changes before deploying
-- commit changes to Git
-- document changes
-- deploy to production
-- keep production and repositories in sync
-- be able to roll back if something breaks
-
-If these rules are followed, the system will remain stable, recoverable, and maintainable.
+- test changes before release
+- commit all changes
+- document all changes
+- ensure reproducibility
