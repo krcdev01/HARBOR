@@ -76,17 +76,7 @@ Result: External access disabled.
 
 ---
 
-### Step 7 — Stop DNS service
-```bash
-sudo docker stop pihole
-```
-What: Stops the Pi-hole DNS service.  
-Why: DNS should remain available until all other services are stopped.  
-Result: DNS service stops.
-
----
-
-### Step 8 — Verify all containers stopped
+### Step 7 — Verify all containers stopped
 ```bash
 sudo docker ps
 ```
@@ -96,10 +86,11 @@ Result: No containers listed.
 
 ---
 
-### Step 9 — Shut down host
+### Step 8 — Shut down host
 ```bash
 sudo shutdown now
 ```
 What: Powers down the server.  
 Why: Safe shutdown after all services have stopped.  
 Result: Server powers off.
+
