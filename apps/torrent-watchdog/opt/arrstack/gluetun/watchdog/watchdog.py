@@ -2,6 +2,7 @@ import json
 import os
 import time
 from pathlib import Path
+from qb_policy import enforce_qb_policy
 
 import requests
 
@@ -126,6 +127,9 @@ def find_stuck_torrents(torrents):
 
 
 def main():
+    enforce_qb_policy()
+    # existing watchdog startup / monitoring loop continues here
+    
     state = load_state()
 
     while True:
