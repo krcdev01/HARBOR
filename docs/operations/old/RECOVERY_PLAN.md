@@ -23,6 +23,11 @@ sudo usermod -aG docker $USER
 sudo mkdir -p /mnt/movies /mnt/tv /mnt/downloads
 ```
 
+5. Install sqllite3; you will likely need to investigagte jellyfin databases so you might as well just get it out of the way.
+```
+
+```
+
 5. Create SSH Key for GitHub
 ```
 ssh-keygen -t ed25519 -C "serveradmin@stageserver"

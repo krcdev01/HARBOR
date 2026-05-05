@@ -1,6 +1,6 @@
-# homeserver-docs
+# HARBOR-docs
 
-Documentation for the homeserver project.
+Documentation for the HARBOR project.
 
 This repository contains the written documentation describing how the server is designed, operated, and maintained.
 
@@ -13,6 +13,6 @@ Content includes:
 - development workflow notes
 - project backlog and roadmap
 
-Configuration and deployment code are stored in `homeserver-infra`.
+Configuration and deployment code are stored in `HARBOR-infra`.
 
-Custom scripts and applications are stored in `homeserver-apps`.
+Custom scripts and applications are stored in `HARBOR-apps`.

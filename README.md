@@ -1,13 +1,26 @@
 # HARBOR
 
+HARBOR is a preconfigured deployable AAR stack.  It stands for:
+
+Home
+Archival
+Reliable
+Broadcast &
+On-Demand
+Repository
+
 ## Overview
 
 This repository defines a containerized media and network stack that provides:
 
-- Media streaming
-- Automated media acquisition and organization
-- VPN-routed download traffic
+- Personal Collection Media Streaming for Home Computer Networks
 - Remote access through an outbound tunnel
+
+Pending Features include:
+
+- Automated media request, acquisition and organization, with safety watchdog
+- VPN-routed download traffic
+- 'Living Server' features such as scheduled campaigns, and an expiring content lifecycle
 
 All services are deployed using Docker and are designed to run on systems that meet the required hardware and storage constraints.
 

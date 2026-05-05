@@ -1,0 +1,36 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:10.11
+    container_name: jellyfin
+    restart: unless-stopped
+
+    environment:
+      TZ: ${TZ:-America/New_York}
+      JELLYFIN_PublishedServerUrl: ${JELLYFIN_PUBLISHED_SERVER_URL}
+
+    security_opt:
+      - seccomp=unconfined
+      - apparmor=unconfined
+
+    ports:
+      - "8096:8096"
+      - "8920:8920"
+
+    volumes:
+      - /srv/jellyfin/config:/config
+      - /srv/jellyfin/cache:/cache
+      - /mnt/tv/Videos:/media
+      - /mnt/movies/videos:/media_e
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token
+      - ${CLOUDFLARED_TOKEN}
+    depends_on:
+      - jellyfin

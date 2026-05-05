@@ -1,0 +1,5 @@
+services:
+  jellyfin:
+    # Staging intentionally omits NVIDIA runtime/GPU settings.
+    # Add them here only if the staging host has NVIDIA container support.
+    environment: {}
