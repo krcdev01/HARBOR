@@ -62,7 +62,7 @@ Additionally, the following three mounts must exist:
    ```
 
 3. Edit .env.staging with the following changes:
-   - JELLYFIN_PUBLISHED_SERVER_URL=[https://staging.[EXTERNALURL].com](https://www.gitlab.com/krcdev01)
+   - JELLYFIN_PUBLISHED_SERVER_URL=[https://staging.[EXTERNALURL].com](https://www.github.com/krcdev01)
    - CLOUDFLARED_TOKEN=[REPLACE_WTIH_TOKEN_FROM_P01S02]
 
 4. Deploy the Media stack.
