@@ -19,8 +19,8 @@ services:
     volumes:
       - /srv/jellyfin/config:/config
       - /srv/jellyfin/cache:/cache
-      - /mnt/tv/Videos:/media
-      - /mnt/movies/videos:/media_e
+      - /mnt/tv/Videos:/tv
+      - /mnt/movies/videos:/movies
 
   cloudflared:
     image: cloudflare/cloudflared:latest
