@@ -15,17 +15,17 @@ HARBOR is an AAR media streaming stack designed to be a turnkey-deploy on a suff
 
 Regardless of the hardware configuration, the environment must be with the following installs:
 
-    - Ubuntu Server
-    - Docker
-    - UFW
-    - git
-    - a shared service account for the AAR stack
+- Ubuntu Server
+- Docker
+- UFW
+- git
+- a shared service account for the AAR stack
 
 Additionally, the following three mounts must exist:
 
-    - /mnt/movies
-    - /mnt/tv
-    - /mnt/downloads
+- /mnt/movies
+- /mnt/tv
+- /mnt/downloads
 
 ### - Phase 1 - Foundation/setup
 
@@ -37,11 +37,17 @@ Additionally, the following three mounts must exist:
    mkdir ~/workspace && cd ~/workspace && git clone git@github.com:krcdev01/HARBOR.git
    ```
 
-### - Phase 2 - Architecture Deployment
+2. Acquire cloudflare token for external access (optional)
 
-1. Set up or check and make sure Cloudflare is gonna work on the staging server.
+   Create a new cloudflare tunnel on cloudflare.  Configure as follows:
+   - Tunnel type: Cloudflared
+   - Tunnel name: jellyfin-cave-staging
+   - Device Operating System: Docker (Cloudflare will provide you with a command to run to pull down cloudflare with your provided token.  Copy this string for later)
+   - Subdomain: staging
+   - Domain: [EXTERNALURL].com
+   - service: http://jellyfin:8096
 
-### - Phase 3 - Infrastructure Deployment
+### - Phase 2 - Media Stack Deployment
 
 1. Copy all of the contents in the infra/srv/ directory over to your server, /srv/ as the destination:
 
@@ -49,16 +55,43 @@ Additionally, the following three mounts must exist:
    sudo cp -r ~/workspace/HARBOR/infra/srv/* /srv/
    ```
 
-2. Do something that starts everything up.
+2. In the /srv/jellyfin directory, rename and modify .env.staging.template, renaming it to .env.staging:
 
-3. Do Jellyfin setup.
+   ```bash
+   mv /srv/jellyfin/.env.staging.template /srv/jellyfin/.env.staging && nano /srv/jellyfin/.env.staging
+   ```
+
+3. Edit .env.staging with the following changes:
+   - JELLYFIN_PUBLISHED_SERVER_URL=[https://staging.[EXTERNALURL].com](https://www.gitlab.com/krcdev01)
+   - CLOUDFLARED_TOKEN=[REPLACE_WTIH_TOKEN_FROM_P01S02]
+
+4. Deploy the Media stack.
+
+   ```bash
+    docker compose --env-file .env.staging -f compose.yaml -f compose.staging.yaml up -d
+    ```
+
+5. Confirm Jellyfin is up and reachable through configured addresses
+
+   - Navigate to your local network server IP and confirm Jellyfin web UI is up.
+   - If configured, open a new browser instance and check the configured external URL set up in Cloudflare.
 
 ### - Phase 4 - Validation
 
-1. Confirm your jellyfin server is reachable both internally on your local network and externally through the internet.
+1. Set up Jellyfin
 
-2. Play content to confirm both audio and video work.
+   Jellyfin requires setting up the following in order to provide any service or value:
 
-3. If possible, play something that must transcode to confirm transcoding is properly configured.
+   - An Admin User
+   - A Content Library
+   - A defined region and default language
+   - Whether or not to enable external connections
 
-4. Play something with subtitles to confirm subtitles are working.
+   After this, the application will perform a content scan and metadata update of your configured libraries.  This will complete setup.
+
+2. Play content to confirm jellyfin is behaving as expected
+
+   - It is highly reccomended to test in a web browser first.  This will allow you to turn on playback info on content and observe server playback behavior.
+   - Create a non-admin test user and exclude access to one or more libraries to confirm basic permissions are working
+   - A variety of content should be played; including content with multiple language and subtitle tracks
+   - Force content to transcode by scaling its resolution down to confirm server can perform server transcoding.
