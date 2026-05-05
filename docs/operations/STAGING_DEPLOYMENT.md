@@ -62,7 +62,7 @@ Additionally, the following three mounts must exist:
    ```
 
 3. Edit .env.staging with the following changes:
-   - JELLYFIN_PUBLISHED_SERVER_URL=[https://staging.[EXTERNALURL].com](https://www.github.com/krcdev01)
+   - JELLYFIN_PUBLISHED_SERVER_URL=[https://staging.[EXTERNALURL].com][l1]
    - CLOUDFLARED_TOKEN=[REPLACE_WTIH_TOKEN_FROM_P01S02]
 
 4. Deploy the Media stack.
@@ -95,3 +95,13 @@ Additionally, the following three mounts must exist:
    - Create a non-admin test user and exclude access to one or more libraries to confirm basic permissions are working
    - A variety of content should be played; including content with multiple language and subtitle tracks
    - Force content to transcode by scaling its resolution down to confirm server can perform server transcoding.
+
+3. Cleanup
+
+   Remove the staging workspace copy of the repository:
+
+   ```shell
+   rm -rf ~/workspace/HARBOR
+   ```
+
+[l1]: https://www.github.com/krcdev01
