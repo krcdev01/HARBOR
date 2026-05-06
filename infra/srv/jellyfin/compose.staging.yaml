@@ -3,3 +3,7 @@ services:
     # Staging intentionally omits NVIDIA runtime/GPU settings.
     # Add them here only if the staging host has NVIDIA container support.
     environment: {}
+    volumes:
+      - /mnt/prod-tv/Videos:/tv:ro
+      - /mnt/prod-movies/videos:/movies:ro
+    
