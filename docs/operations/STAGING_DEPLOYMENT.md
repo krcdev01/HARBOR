@@ -71,6 +71,8 @@ Additionally, the following three mounts must exist:
     docker compose --env-file .env.staging -f compose.yaml -f compose.staging.yaml up -d
     ```
 
+    **Note**: compose.staging.yaml contains supplemental mappings to production drives to the staging environment to emulate library behavior and should not be used if the production environment is not online and it's drives are not configured to be sharable through samba.  The account used by the staging environment to access these drives must be configured with read-only permissions so that the staging environment does not attempt to overwrite or manipulate the content of these drives beyond read.
+
 5. Confirm Jellyfin is up and reachable through configured addresses
 
    - Navigate to your local network server IP and confirm Jellyfin web UI is up.

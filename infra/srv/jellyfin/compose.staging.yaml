@@ -4,6 +4,6 @@ services:
     # Add them here only if the staging host has NVIDIA container support.
     environment: {}
     volumes:
-      - /mnt/prod-tv/Videos:/tv:ro
-      - /mnt/prod-movies/videos:/movies:ro
+      - /mnt/prod-tv/Videos:/tv-PROD:ro
+      - /mnt/prod-movies/videos:/movies-PROD:ro
     
