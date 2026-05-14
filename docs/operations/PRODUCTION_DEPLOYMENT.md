@@ -47,7 +47,7 @@ Additionally, the following three mounts must exist:
    - Device Operating System: Docker (Cloudflare will provide you with a command to run to pull down cloudflare with your provided token.  Copy this string for later)
    - Subdomain: staging
    - Domain: [EXTERNALURL].com
-   - service: http://jellyfin:8096
+   - service: [jellyfin](http://jellyfin:8096)
 
    **Note: If this step has previously been done on a prior deployment and the cloudflare token was lost, the prior key must be deleted and recreated using the steps above.  Otherwise, you can retrieve the token and skip this step.**
 
