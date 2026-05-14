@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document describes the procedure to deploy HARBOR to my personal staging environment.  This document is to be used as a baseline for a general deployment plan document in the future that is universally compatible with a single environmental deploy.
+This document describes the procedure to deploy HARBOR to my personal production environment.  This document is to be used as a baseline for a general deployment plan document in the future that is universally compatible with a single environmental deploy.
 
 ## Server Buildout Plan
 
@@ -49,6 +49,8 @@ Additionally, the following three mounts must exist:
    - Domain: [EXTERNALURL].com
    - service: http://jellyfin:8096
 
+   **Note: If this step has previously been done on a prior deployment and the cloudflare token was lost, the prior key must be deleted and recreated using the steps above.  Otherwise, you can retrieve the token and skip this step.**
+
 ### - Phase 2 - Media Stack Deployment
 
 1. Copy all of the contents in the infra/srv/ directory over to your server, /srv/ as the destination:
@@ -60,20 +62,19 @@ Additionally, the following three mounts must exist:
 2. In the /srv/jellyfin directory, rename and modify .env.staging.template, renaming it to .env.staging:
 
    ```bash
-   sudo mv /srv/jellyfin/.env.staging.template /srv/jellyfin/.env.staging && sudo nano /srv/jellyfin/.env.staging
+   sudo mv /srv/jellyfin/.env.prod.template /srv/jellyfin/.env.prod && sudo nano /srv/jellyfin/.env.prod
    ```
 
 3. Edit .env.staging with the following changes:
-   - JELLYFIN_PUBLISHED_SERVER_URL=[https://staging.[EXTERNALURL].com][l1]
+   - TZ-America/New_York
+   - JELLYFIN_PUBLISHED_SERVER_URL=[https://[EXTERNALURL].com][l1]
    - CLOUDFLARED_TOKEN=[REPLACE_WTIH_TOKEN_FROM_P01S02]
 
 4. Deploy the Media stack.
 
    ```bash
-    docker compose --env-file .env.staging -f compose.yaml -f compose.staging.yaml up -d
+    docker compose --env-file .env.prod -f compose.yaml -f compose.prod.yaml up -d
     ```
-
-    **Note**: compose.staging.yaml contains supplemental mappings to production drives to the staging environment to emulate library behavior and should not be used if the production environment is not online and it's drives are not configured to be sharable through samba.  The account used by the staging environment to access these drives must be configured with read-only permissions so that the staging environment does not attempt to overwrite or manipulate the content of these drives beyond read.
 
 5. Confirm Jellyfin is up and reachable through configured addresses
 
