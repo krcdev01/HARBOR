@@ -18,7 +18,7 @@ Result: All major containers should be visible and running.
 
 ---
 
-### Step 1 — Stop the Jellyfin Provider Stack
+### Step 1 — Stop the Media Server Stack
 
     ```bash
     cd /srv/media && docker compose --env-file /srv/media/.env.staging -f compose.yaml -f compose.staging.yaml stop
