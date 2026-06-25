@@ -57,10 +57,10 @@ Additionally, the following three mounts must exist:
    sudo cp -r ~/workspace/HARBOR/infra/srv/* /srv/
    ```
 
-2. In the /srv/jellyfin directory, rename and modify .env.staging.template, renaming it to .env.staging:
+2. In the /srv/media directory, rename and modify .env.staging.template, renaming it to .env.staging:
 
    ```bash
-   sudo mv /srv/jellyfin/.env.staging.template /srv/jellyfin/.env.staging && sudo nano /srv/jellyfin/.env.staging
+   sudo mv /srv/media/.env.staging.template /srv/media/.env.staging && sudo nano /srv/media/.env.staging
    ```
 
 3. Edit .env.staging with the following changes:

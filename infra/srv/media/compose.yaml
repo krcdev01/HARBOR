@@ -5,12 +5,8 @@ services:
     restart: unless-stopped
 
     environment:
-      - TZ=America/New_York
-      - JELLYFIN_PublishedServerUrl=${JELLYFIN_PUBLISHED_SERVER_URL}
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=all
-
-    runtime: nvidia
+      TZ: ${TZ:-America/New_York}
+      JELLYFIN_PublishedServerUrl: ${JELLYFIN_PUBLISHED_SERVER_URL}
 
     security_opt:
       - seccomp=unconfined
@@ -21,10 +17,10 @@ services:
       - "8920:8920"
 
     volumes:
-      - "/srv/jellyfin/config:/config"
-      - "/srv/jellyfin/cache:/cache"
-      - "/mnt/tv/Videos:/media"
-      - "/mnt/movies/videos:/media_e"
+      - /srv/media/config:/config
+      - /srv/media/cache:/cache
+      - /mnt/tv/Videos:/tv
+      - /mnt/movies/videos:/movies
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -38,3 +34,17 @@ services:
       - ${CLOUDFLARED_TOKEN}
     depends_on:
       - jellyfin
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${MEDIA_CONFIG_ROOT}/sonarr:/config
+      - ${TV_ROOT}:/tv
+    ports:
+      - "8989:8989"
