@@ -17,9 +17,9 @@ services:
       - "8920:8920"
 
     volumes:
-      - /srv/media/config:/config
-      - /srv/media/cache:/cache
-      - /mnt/tv/Videos:/tv
+      - ${MEDIA_CONFIG_ROOT}/config:/config
+      - ${MEDIA_CONFIG_ROOT}/cache:/cache
+      - ${TV_ROOT}/Videos:/tv
       - /mnt/movies/videos:/movies
 
   cloudflared:
