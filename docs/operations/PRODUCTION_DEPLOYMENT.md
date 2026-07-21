@@ -25,7 +25,6 @@ Additionally, the following three mounts must exist:
 
 - /mnt/movies
 - /mnt/tv
-- /mnt/downloads
 
 ### - Phase 1 - Foundation/setup
 
@@ -81,7 +80,13 @@ Additionally, the following three mounts must exist:
    - Navigate to your local network server IP and confirm Jellyfin web UI is up.
    - If configured, open a new browser instance and check the configured external URL set up in Cloudflare.
 
-### - Phase 4 - Validation
+6. Confirm Sonarr is up and reachable
+
+   - Navigate to Sonarr at the server's local network address on port `8989`.
+   - Confirm that the Sonarr web interface loads.
+   - Complete the initial authentication setup if prompted and confirm that you can log in.
+
+### - Phase 3 - Validation
 
 1. Set up Jellyfin
 
@@ -94,14 +99,27 @@ Additionally, the following three mounts must exist:
 
    After this, the application will perform a content scan and metadata update of your configured libraries.  This will complete setup.
 
-2. Play content to confirm jellyfin is behaving as expected
+2. Perform basic Sonarr setup
+
+   Sonarr requires initial authentication and library configuration before it can manage existing television content.
+
+   - Open Sonarr using the server's local network address on port `8989`.
+   - Configure the Sonarr authentication username and password if this was not completed during deployment.
+   - Log in using the configured credentials.
+   - Add the root folders containing the television libraries that Sonarr will manage.
+   - Import the existing series from those root folders.
+   - Confirm that Sonarr can see the expected series and access their files.
+
+   Automated download clients, indexers, quality profiles, and acquisition rules are configured separately and are outside the scope of this initial deployment procedure.
+
+3. Play content to confirm jellyfin is behaving as expected
 
    - It is highly reccomended to test in a web browser first.  This will allow you to turn on playback info on content and observe server playback behavior.
    - Create a non-admin test user and exclude access to one or more libraries to confirm basic permissions are working
    - A variety of content should be played; including content with multiple language and subtitle tracks
    - Force content to transcode by scaling its resolution down to confirm server can perform server transcoding.
 
-3. Cleanup
+4. Cleanup
 
    Remove the staging workspace copy of the repository:
 

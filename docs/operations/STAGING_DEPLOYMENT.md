@@ -8,10 +8,7 @@ This document describes the procedure to deploy HARBOR to my personal staging en
 
 ### Phase 0 - Prerequisite
 
-HARBOR is an AAR media streaming stack designed to be a turnkey-deploy on a sufficiently equipped home media server.  Minimum Requirements are yet to be determined, but development of this process is being done against two different devices:
-
-- An on-demand virtual machine running 2 cores and 8GB of RAM with no hardware graphics accelerator and 10GB staged mounts
-- An always-on hardware production server running a Ryzen 5 3600 with 48GB of ram and 29 total TB of drive space
+HARBOR is an AAR media streaming stack designed to be a turnkey-deploy on a sufficiently equipped home media server.  Minimum Requirements are yet to be determined.
 
 Regardless of the hardware configuration, the environment must be with the following installs:
 
@@ -25,7 +22,6 @@ Additionally, the following three mounts must exist:
 
 - /mnt/movies
 - /mnt/tv
-- /mnt/downloads
 
 ### - Phase 1 - Foundation/setup
 
@@ -80,6 +76,12 @@ Additionally, the following three mounts must exist:
    - Navigate to your local network server IP and confirm Jellyfin web UI is up.
    - If configured, open a new browser instance and check the configured external URL set up in Cloudflare.
 
+6. Confirm Sonarr is up and reachable
+
+   - Navigate to Sonarr at the server's local network address on port `8989`.
+   - Confirm that the Sonarr web interface loads.
+   - Complete the initial authentication setup if prompted and confirm that you can log in.
+
 ### - Phase 4 - Validation
 
 1. Set up Jellyfin
@@ -93,14 +95,26 @@ Additionally, the following three mounts must exist:
 
    After this, the application will perform a content scan and metadata update of your configured libraries.  This will complete setup.
 
-2. Play content to confirm jellyfin is behaving as expected
+2. Perform basic Sonarr setup
 
+   Sonarr requires initial authentication and library configuration before it can manage existing television content.
+
+   - Open Sonarr using the server's local network address on port `8989`.
+   - Configure the Sonarr authentication username and password if this was not completed during deployment.
+   - Log in using the configured credentials.
+   - Add the root folders containing the television libraries that Sonarr will manage.
+   - Import the existing series from those root folders.
+   - Confirm that Sonarr can see the expected series and access their files.
+
+   Automated download clients, indexers, quality profiles, and acquisition rules are configured separately and are outside the scope of this initial deployment procedure.
+
+3. Play content to confirm jellyfin is behaving as expected
    - It is highly reccomended to test in a web browser first.  This will allow you to turn on playback info on content and observe server playback behavior.
    - Create a non-admin test user and exclude access to one or more libraries to confirm basic permissions are working
    - A variety of content should be played; including content with multiple language and subtitle tracks
    - Force content to transcode by scaling its resolution down to confirm server can perform server transcoding.
 
-3. Cleanup
+4. Cleanup
 
    Remove the staging workspace copy of the repository:
 

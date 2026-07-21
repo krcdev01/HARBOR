@@ -17,10 +17,10 @@ services:
       - "8920:8920"
 
     volumes:
-      - ${MEDIA_CONFIG_ROOT}/config:/config
-      - ${MEDIA_CONFIG_ROOT}/cache:/cache
+      - ${MEDIA_CONFIG_ROOT}/jellyfin/config:/config
+      - ${MEDIA_CONFIG_ROOT}/jellyfin/cache:/cache
       - ${TV_ROOT}/Videos:/tv
-      - /mnt/movies/videos:/movies
+      - ${MOVIES_ROOT}/videos:/moviess
 
   cloudflared:
     image: cloudflare/cloudflared:latest
