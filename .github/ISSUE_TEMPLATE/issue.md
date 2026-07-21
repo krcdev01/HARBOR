@@ -2,7 +2,7 @@
 name: Task at hand.
 about: Define a planned HARBOR implementation or configuration change
 title: ""
-labels: [bug | documentation | enhancement | maintenance | security | deployment | configuration | infrastructure]
+labels: ""
 assignees: "@krcdev01"
 ---
 
