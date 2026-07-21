@@ -72,7 +72,7 @@ This will restore:
 - /etc
 - /home/serveradmin
 - /opt/arrstack
-- /srv/jellyfin
+- /srv/media
 - /srv/pihole
 
 ### Phase 4 — Rebuild Services
