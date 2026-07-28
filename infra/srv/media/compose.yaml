@@ -20,7 +20,7 @@ services:
       - ${MEDIA_CONFIG_ROOT}/jellyfin/config:/config
       - ${MEDIA_CONFIG_ROOT}/jellyfin/cache:/cache
       - ${TV_ROOT}/Videos:/tv
-      - ${MOVIES_ROOT}/videos:/moviess
+      - ${MOVIES_ROOT}/videos:/movies
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -48,3 +48,18 @@ services:
       - ${TV_ROOT}:/tv
     ports:
       - "8989:8989"
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${MEDIA_CONFIG_ROOT}/radarr:/config
+      - ${MOVIES_ROOT}:/movies
+    ports:
+      - "7878:7878"
+
