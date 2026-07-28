@@ -82,7 +82,13 @@ Additionally, the following three mounts must exist:
    - Confirm that the Sonarr web interface loads.
    - Complete the initial authentication setup if prompted and confirm that you can log in.
 
-### - Phase 4 - Validation
+7. Confirm Radarr is up and reachable
+
+   - Navigate to Radarr at the server's local network address on port 7878.
+   - Confirm that the Radarr web interface loads.
+   - Complete the initial authentication setup if prompted and confirm that you can log in.
+
+### - Phase 3 - Validation
 
 1. Set up Jellyfin
 
@@ -108,13 +114,31 @@ Additionally, the following three mounts must exist:
 
    Automated download clients, indexers, quality profiles, and acquisition rules are configured separately and are outside the scope of this initial deployment procedure.
 
-3. Play content to confirm jellyfin is behaving as expected
+3. Perform basic Radarr setup
+
+   Radarr requires initial authentication and library configuration before it can manage existing movie content.
+
+   - Open Radarr using the server's local network address on port 7878.
+   - Configure the Radarr authentication username and password if this was not completed during deployment.
+   - Log in using the configured credentials.
+   - Add the root folders containing the movie libraries that Radarr will manage.
+   - Import the existing movies from those root folders.
+   - Confirm that Radarr can see the expected movies and access their files.
+   - Open Settings → Metadata.
+   - Add and enable the Kodi/Emby metadata consumer.
+   - Enable movie metadata and movie images so that Radarr writes local NFO and artwork files alongside the movie files.
+   - Run a refresh and scan against the imported movies.
+   - Confirm that Radarr creates the expected NFO, poster, fanart, and related metadata files.
+
+   Automated download clients, indexers, quality profiles, and acquisition rules are configured separately and are outside the scope of this initial deployment procedure
+
+4. Play content to confirm jellyfin is behaving as expected
    - It is highly reccomended to test in a web browser first.  This will allow you to turn on playback info on content and observe server playback behavior.
    - Create a non-admin test user and exclude access to one or more libraries to confirm basic permissions are working
    - A variety of content should be played; including content with multiple language and subtitle tracks
    - Force content to transcode by scaling its resolution down to confirm server can perform server transcoding.
 
-4. Cleanup
+5. Cleanup
 
    Remove the staging workspace copy of the repository:
 
