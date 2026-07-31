@@ -35,6 +35,71 @@ services:
     depends_on:
       - jellyfin
 
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - "18080:9091"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - VPN_SERVICE_PROVIDER=${VPN_SP}
+      - VPN_TYPE=openvpn
+      - OPENVPN_USER=${OPENVPN_USER}
+      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
+      - OPENVPN_PROTOCOL=udp
+      - SERVER_COUNTRIES=United States
+      - PORT_FORWARD_ONLY=on
+      - VPN_PORT_FORWARDING=on
+      - FIREWALL=on
+      - FIREWALL_INPUT_PORTS=9091
+      - HTTP_CONTROL_SERVER_LOG=on
+      - HTTP_CONTROL_SERVER_ADDRESS=:8000
+      - HEALTH_RESTART_VPN=on
+      - DNS_SERVER=on
+      - DNS_UPSTREAM_RESOLVER_TYPE=DoT
+      - DNS_UPSTREAM_RESOLVERS=cloudflare
+      - DNS_UPSTREAM_IPV6=off
+      - DNS_CACHING=on
+      - BLOCK_MALICIOUS=on
+      - BLOCK_SURVEILLANCE=off
+      - BLOCK_ADS=off
+      - PUBLICIP_ENABLED=on
+    restart: unless-stopped
+
+  transmission:
+    image: lscr.io/linuxserver/transmission:latest
+    container_name: transmission
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    volumes:
+      - ${MEDIA_CONFIG_ROOT}/transmission:/config
+      - ${TV_ROOT}:/tv
+      - ${MOVIES_ROOT}:/movies
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ:-America/New_York}
+    restart: unless-stopped
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      - ${MEDIA_CONFIG_ROOT}/prowlarr:/config
+    ports:
+      - "9696:9696"
+
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
@@ -42,7 +107,7 @@ services:
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
-      - TZ=${TZ}
+      - TZ=${TZ:-America/New_York}
     volumes:
       - ${MEDIA_CONFIG_ROOT}/sonarr:/config
       - ${TV_ROOT}:/tv
@@ -62,4 +127,3 @@ services:
       - ${MOVIES_ROOT}:/movies
     ports:
       - "7878:7878"
-
