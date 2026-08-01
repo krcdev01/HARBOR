@@ -42,6 +42,8 @@ services:
       - NET_ADMIN
     devices:
       - /dev/net/tun:/dev/net/tun
+    volumes:
+      - gluetun-port:/tmp/gluetun
     ports:
       - "18080:9091"
       - "9696:9696"
@@ -89,6 +91,27 @@ services:
       - TZ=${TZ:-America/New_York}
     restart: unless-stopped
 
+  polly:
+    image: python:3.12-alpine
+    container_name: polly
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+      - transmission
+    command:
+      - python
+      - /app/polly.py
+    environment:
+      - GLUETUN_PORT_FILE=/tmp/gluetun/forwarded_port
+      - TRANSMISSION_RPC_URL=http://127.0.0.1:9091/transmission/rpc
+      - TRANSMISSION_RPC_USERNAME=${TRANSMISSION_RPC_USERNAME:-}
+      - TRANSMISSION_RPC_PASSWORD=${TRANSMISSION_RPC_PASSWORD:-}
+      - POLL_SECONDS=${POLLY_POLL_SECONDS:-10}
+    volumes:
+      - gluetun-port:/tmp/gluetun:ro
+      - ${POLLY_ROOT:-/srv/polly}/polly.py:/app/polly.py:ro
+    restart: unless-stopped
+
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
@@ -130,3 +153,6 @@ services:
       - ${MOVIES_ROOT}:/movies
     ports:
       - "7878:7878"
+
+volumes:
+  gluetun-port:
