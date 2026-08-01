@@ -91,6 +91,28 @@ services:
       - TZ=${TZ:-America/New_York}
     restart: unless-stopped
 
+  transmission-config:
+    image: python:3.12-alpine
+    container_name: transmission-config
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+      - transmission
+    command:
+      - python
+      - /app/configure.py
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TRANSMISSION_RPC_URL=http://127.0.0.1:9091/transmission/rpc
+      - TV_DOWNLOAD_DIR=/tv/downloads
+      - MOVIES_DOWNLOAD_DIR=/movies/downloads
+    volumes:
+      - ${TRANSMISSION_CONFIG_ROOT:-/srv/transmission-config}/configure.py:/app/configure.py:ro
+      - ${TV_ROOT}:/tv
+      - ${MOVIES_ROOT}:/movies
+    restart: "no"
+
   polly:
     image: python:3.12-alpine
     container_name: polly
@@ -130,6 +152,9 @@ services:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
     restart: unless-stopped
+    depends_on:
+      transmission-config:
+        condition: service_completed_successfully
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -144,6 +169,9 @@ services:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
     restart: unless-stopped
+    depends_on:
+      transmission-config:
+        condition: service_completed_successfully
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
