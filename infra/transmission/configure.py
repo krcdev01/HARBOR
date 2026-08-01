@@ -71,6 +71,8 @@ def configure_transmission() -> None:
                     "download-dir": str(TV_DOWNLOAD_DIR),
                     "incomplete-dir-enabled": False,
                     "watch-dir-enabled": False,
+                    "seedRatioLimit": 0,
+                    "seedRatioLimited": True,
                 },
             )
             return
