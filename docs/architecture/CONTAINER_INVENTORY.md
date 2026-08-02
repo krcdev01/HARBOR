@@ -1,99 +1,47 @@
 # Container Inventory
 
 ## Overview
-This document inventories all containers that comprise the HARBOR platform. It defines their roles, relationships, exposed interfaces, persistence requirements, and operational notes.
 
-This is a **platform-level document**. It does not include host-specific paths, hardware assumptions, or non-HARBOR services.
-
----
+The HARBOR media stack is defined by `apps/srv/media/compose.yaml`. Production
+and staging apply their environment-specific Compose override to this shared
+definition.
 
 ## Container Summary
 
-| Container | Stack | Image | Exposed Ports | Container Paths | Depends On | Backup Required | Notes |
-|---|---|---|---|---|---|---|---|
-| jellyfin | Media | jellyfin/jellyfin:10.11 | 8096/tcp, 8920/tcp | /config, /cache, /media, /media_e | None | Yes | Primary media server |
-| cloudflared | Remote Access | cloudflare/cloudflared:latest | None | None | jellyfin | No | Provides outbound tunnel access |
-| radarr | Media Automation | lscr.io/linuxserver/radarr:latest | 7878/tcp | /config, /downloads, /movies | prowlarr, qbittorrent | Yes | Movie acquisition and organization |
-| sonarr | Media Automation | lscr.io/linuxserver/sonarr:latest | 8989/tcp | /config, /downloads, /tv | prowlarr, qbittorrent | Yes | TV acquisition and organization |
-| prowlarr | Media Automation | lscr.io/linuxserver/prowlarr:latest | 9696/tcp | /config | None | Yes | Indexer management |
-| qbittorrent | Torrent | lscr.io/linuxserver/qbittorrent:latest | via gluetun | /config, /downloads | gluetun | Yes | Torrent client |
-| gluetun | VPN | qmcgaw/gluetun:latest | 18080/tcp, 6881/tcp/udp | /gluetun | None | Yes | VPN gateway and network enforcement |
-| torrent-watchdog | Automation | python:3.12-alpine | None | /app | gluetun, qbittorrent | Yes | Torrent recovery automation |
+| Container | Image | Interface | Persistent paths | Dependencies | Purpose |
+|---|---|---|---|---|---|
+| Jellyfin | `jellyfin/jellyfin:10.11` | `8096`, `8920` | `/config`, `/cache` | None | Serves the television and movie libraries |
+| Cloudflared | `cloudflare/cloudflared:latest` | Outbound tunnel | None | Jellyfin | Connects Jellyfin to the configured Cloudflare Tunnel |
+| Gluetun | `qmcgaw/gluetun:latest` | `18080` for Transmission, `9696` for Prowlarr | Shared forwarded-port volume | None | Provides the VPN network namespace, firewall, and forwarded peer port |
+| Transmission | `lscr.io/linuxserver/transmission:latest` | Through Gluetun | `/config` | Gluetun | Downloads releases to the television or movie storage pipeline |
+| Transmission Config | `python:3.12-alpine` | None | None | Gluetun, Transmission | Prepares the download directories and applies Transmission session policy |
+| Polly | `python:3.12-alpine` | None | None | Gluetun, Transmission | Synchronizes Transmission's peer port with Gluetun's forwarded port |
+| Prowlarr | `lscr.io/linuxserver/prowlarr:latest` | `9696` through Gluetun | `/config` | Gluetun | Supplies indexers to Sonarr and Radarr |
+| Sonarr | `lscr.io/linuxserver/sonarr:latest` | `8989` | `/config` | Transmission Config | Acquires, imports, and organizes television series |
+| Radarr | `lscr.io/linuxserver/radarr:latest` | `7878` | `/config` | Transmission Config | Acquires, imports, and organizes movies |
 
----
+## Storage and Network Relationships
 
-## Container Details
+- Jellyfin mounts `${TV_ROOT}/Videos` at `/tv` and
+  `${MOVIES_ROOT}/videos` at `/movies`.
+- Transmission mounts `${TV_ROOT}` at `/tv` and `${MOVIES_ROOT}` at
+  `/movies` so each download pipeline remains on its corresponding storage.
+- Sonarr mounts `${TV_ROOT}` at `/tv`.
+- Radarr mounts `${MOVIES_ROOT}` at `/movies`.
+- Transmission Config mounts both media roots to prepare `/tv/downloads` and
+  `/movies/downloads`.
+- Transmission and Prowlarr share Gluetun's network namespace. Their published
+  web interfaces and all of their outbound traffic pass through Gluetun.
+- Polly shares Gluetun's network namespace and reads its forwarded-port file
+  from the `gluetun-port` volume.
+- Sonarr and Radarr reach Transmission at `gluetun:9091` and retain their own
+  normal stack networking for communication with Prowlarr.
 
-### jellyfin
-- **Purpose:** Media streaming server
-- **Ports:** 8096/tcp (HTTP), 8920/tcp (HTTPS)
-- **Data Persistence:** /config, /cache
-- **Media Mounts:** /media, /media_e
-- **Notes:** GPU acceleration supported; externally exposed via tunnel
+## Environment Differences
 
----
+Production applies `compose.prod.yaml`, which gives Jellyfin access to the
+NVIDIA runtime and GPU.
 
-### cloudflared
-- **Purpose:** Remote access via outbound tunnel
-- **Ports:** None
-- **Data Persistence:** None
-- **Notes:** Requires external authentication/token
-
----
-
-### radarr
-- **Purpose:** Movie acquisition and library management
-- **Ports:** 7878/tcp
-- **Data Persistence:** /config
-- **Dependencies:** prowlarr, qbittorrent
-- **Notes:** Handles import and organization workflows
-
----
-
-### sonarr
-- **Purpose:** TV acquisition and library management
-- **Ports:** 8989/tcp
-- **Data Persistence:** /config
-- **Dependencies:** prowlarr, qbittorrent
-- **Notes:** Works in conjunction with indexers and download client
-
----
-
-### prowlarr
-- **Purpose:** Indexer aggregation and management
-- **Ports:** 9696/tcp
-- **Data Persistence:** /config
-- **Notes:** Central service for ARR applications
-
----
-
-### qbittorrent
-- **Purpose:** Torrent client
-- **Ports:** Exposed via gluetun
-- **Data Persistence:** /config, /downloads
-- **Dependencies:** gluetun
-- **Notes:** Runs within VPN network namespace
-
----
-
-### gluetun
-- **Purpose:** VPN gateway and network routing enforcement
-- **Ports:** 18080/tcp (WebUI proxy), 6881/tcp/udp (torrent)
-- **Data Persistence:** /gluetun
-- **Notes:** Controls outbound routing and port forwarding
-
----
-
-### torrent-watchdog
-- **Purpose:** Torrent recovery automation
-- **Ports:** None
-- **Data Persistence:** /app
-- **Dependencies:** gluetun, qbittorrent
-- **Notes:** Monitors stalled torrents and triggers corrective actions
-
----
-
-## Notes
-- All paths are container-relative; host mappings are implementation-specific.
-- This document defines the HARBOR platform only.
-- Networking and routing behavior are documented separately.
+Staging applies `compose.staging.yaml`, which keeps Jellyfin CPU-only and adds
+read-only mounts of the production television and movie libraries for playback
+testing.
