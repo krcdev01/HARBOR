@@ -1,109 +1,108 @@
 # HARBOR
 
-HARBOR is a preconfigured deployable AAR stack.  It stands for:
+HARBOR is a deployable media streaming and acquisition stack. Its name stands
+for Home Archival, Reliable Broadcast & On-Demand Repository.
 
-Home
-Archival
-Reliable
-Broadcast &
-On-Demand
-Repository
+## Capabilities
 
-## Overview
+HARBOR combines the following services into one Docker Compose deployment:
 
-This repository defines a containerized media and network stack that provides:
+| Service | Capability |
+|---|---|
+| Jellyfin | Streams the organized television and movie libraries locally and remotely |
+| Cloudflared | Publishes Jellyfin through an authenticated Cloudflare Tunnel |
+| Gluetun | Routes download-related services through a VPN with firewall enforcement and port forwarding |
+| Transmission | Downloads releases selected by Sonarr and Radarr into separate television and movie pipelines |
+| Transmission Config | Creates the download directories, applies their ownership and permissions, and configures completed torrents to stop seeding |
+| Polly | Keeps Transmission's peer listening port synchronized with the port forwarded by the VPN provider |
+| Prowlarr | Provides indexer connectivity to Sonarr and Radarr through the VPN |
+| Sonarr | Monitors, acquires, imports, and organizes television series |
+| Radarr | Monitors, acquires, imports, and organizes movies |
 
-- Personal Collection Media Streaming for Home Computer Networks
-- Remote access through an outbound tunnel
+Transmission and Prowlarr share Gluetun's VPN network namespace. Gluetun's
+firewall provides the download-path killswitch, and Polly updates Transmission
+after the VPN receives or changes its forwarded peer port.
 
-Pending Features include:
+Television downloads remain on the television filesystem and movie downloads
+remain on the movie filesystem. This allows Sonarr and Radarr to import completed
+downloads using hardlinks within their respective storage pipelines.
 
-- Automated media request, acquisition and organization, with safety watchdog
-- VPN-routed download traffic
-- 'Living Server' features such as scheduled campaigns, and an expiring content lifecycle
+## Deployment Environments
 
-All services are deployed using Docker and are designed to run on systems that meet the required hardware and storage constraints.
+The shared media stack supports two deployment environments:
 
----
+- **Production** uses the production media mounts and enables NVIDIA GPU access
+  for Jellyfin through `compose.prod.yaml`.
+- **Staging** runs Jellyfin without the NVIDIA runtime and adds read-only mounts
+  of the production libraries for validation through `compose.staging.yaml`.
 
-## What This Repository Contains
-
-- Container definitions and configuration
-- Required environment variables and configuration patterns
-- Architecture documentation
-- Operational procedures (startup, shutdown, troubleshooting)
-- Data persistence requirements
-
----
-
-## What This Repository Does Not Contain
-
-- Host operating system configuration
-- Hardware-specific setup
-- Backup implementation
-- Network infrastructure outside the stack
-- Secrets or credentials
-
-These concerns are handled outside this repository.
-
----
+Each environment uses its own environment file for media paths, the shared
+service identity, Cloudflare credentials, VPN credentials, and runtime script
+locations.
 
 ## Requirements
 
-Minimum requirements for deployment:
+A deployment host requires:
 
-- Linux-based host system
-- Docker and Docker Compose
-- Persistent storage for:
-  - media libraries
-  - downloads
-  - application configuration
-- Network access for:
-  - container image pulls
-  - VPN provider
-  - external services (indexers, tunnel provider)
+- Ubuntu Server
+- Docker Engine and the Docker Compose plugin
+- Git
+- UFW
+- `/dev/net/tun` access for Gluetun
+- Writable television and movie storage mounts
+- VPN provider credentials with port-forwarding support
+- A Cloudflare Tunnel token for remote Jellyfin access
 
----
+Production also requires NVIDIA drivers and the NVIDIA Container Toolkit.
+Staging requires read-only access to the production Samba shares used for
+playback validation.
 
-## Deployment Overview
+## Repository Layout
 
-1. Prepare host system with Docker installed
-2. Define required environment variables
-3. Map host storage to required container paths
-4. Deploy containers using provided configuration
-5. Verify service availability
+| Path | Purpose |
+|---|---|
+| `apps/srv/media` | Shared Compose stack, environment templates, and production and staging overrides |
+| `infra/srv/polly` | Polly runtime script and unit tests |
+| `infra/srv/transmission` | Transmission startup configuration script |
+| `docs/architecture` | Container and filesystem architecture |
+| `docs/operations` | Deployment, startup, and shutdown procedures |
 
-Detailed deployment instructions are located in the documentation.
+The `srv` paths in the repository correspond to files installed beneath `/srv`
+on the target server.
 
----
+## Deploy HARBOR
+
+Clone the repository onto the target server:
+
+```bash
+mkdir -p ~/workspace
+cd ~/workspace
+git clone git@github.com:krcdev01/HARBOR.git
+cd HARBOR
+```
+
+Then follow the complete ordered procedure for the target environment:
+
+- [Staging deployment](docs/operations/STAGING_DEPLOYMENT.md)
+- [Production deployment](docs/operations/PRODUCTION_DEPLOYMENT.md)
+
+Use the documented procedure from beginning to end. Each runbook covers host
+validation, repository installation, environment configuration, stack startup,
+container validation, storage access, VPN routing, and application connectivity
+for its environment.
 
 ## Documentation
 
-See the `docs/` directory for:
+- [Contributing](CONTRIBUTING.md)
+- [Applications](apps/README.md)
+- [Infrastructure](infra/README.md)
+- [Container inventory](docs/architecture/CONTAINER_INVENTORY.md)
+- [Filesystem layout](docs/architecture/FILESYSTEM_LAYOUT.md)
+- [Data persistence requirements](docs/architecture/DATA_PERSISTENCE_REQUIREMENTS.md)
+- [Start procedure](docs/operations/START_PROCEDURE.md)
+- [Shutdown procedure](docs/operations/SHUTDOWN_PROCEDURE.md)
+- [Secrets management](docs/operations/SECRETS.md)
 
-- Architecture
-  - container inventory
-  - network topology
-  - filesystem layout
-- Operations
-  - startup and shutdown procedures
-  - troubleshooting
-  - secrets and configuration
-  - persistence requirements
+## Support
 
----
-
-## Design Principles
-
-- Services are isolated in containers
-- Network exposure is minimized
-- State is externalized and recoverable
-- The system can be redeployed from repository contents
-
----
-
-## Summary
-
-This repository defines a complete, deployable service stack.
-
-All required behavior, structure, and operation are documented within this repository.
+Send support questions to [krcdev01@gmail.com](mailto:krcdev01@gmail.com).

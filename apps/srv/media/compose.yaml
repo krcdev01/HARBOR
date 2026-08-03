@@ -1,0 +1,186 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:10.11
+    container_name: jellyfin
+    restart: unless-stopped
+
+    environment:
+      TZ: ${TZ:-America/New_York}
+      JELLYFIN_PublishedServerUrl: ${JELLYFIN_PUBLISHED_SERVER_URL}
+
+    security_opt:
+      - seccomp=unconfined
+      - apparmor=unconfined
+
+    ports:
+      - "8096:8096"
+      - "8920:8920"
+
+    volumes:
+      - ${MEDIA_CONFIG_ROOT}/jellyfin/config:/config
+      - ${MEDIA_CONFIG_ROOT}/jellyfin/cache:/cache
+      - ${TV_ROOT}/Videos:/tv
+      - ${MOVIES_ROOT}/videos:/movies
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token
+      - ${CLOUDFLARED_TOKEN}
+    depends_on:
+      - jellyfin
+
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - gluetun-port:/tmp/gluetun
+    ports:
+      - "18080:9091"
+      - "9696:9696"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - VPN_SERVICE_PROVIDER=${VPN_SP}
+      - VPN_TYPE=openvpn
+      - OPENVPN_USER=${OPENVPN_USER}
+      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
+      - OPENVPN_PROTOCOL=udp
+      - SERVER_COUNTRIES=United States
+      - PORT_FORWARD_ONLY=on
+      - VPN_PORT_FORWARDING=on
+      - FIREWALL=on
+      - FIREWALL_INPUT_PORTS=9091,9696
+      - FIREWALL_OUTBOUND_SUBNETS=192.168.0.0/24
+      - HTTP_CONTROL_SERVER_LOG=on
+      - HTTP_CONTROL_SERVER_ADDRESS=:8000
+      - HEALTH_RESTART_VPN=on
+      - DNS_SERVER=on
+      - DNS_UPSTREAM_RESOLVER_TYPE=DoT
+      - DNS_UPSTREAM_RESOLVERS=cloudflare
+      - DNS_UPSTREAM_IPV6=off
+      - DNS_CACHING=on
+      - BLOCK_MALICIOUS=on
+      - BLOCK_SURVEILLANCE=off
+      - BLOCK_ADS=off
+      - PUBLICIP_ENABLED=on
+    restart: unless-stopped
+
+  transmission:
+    image: lscr.io/linuxserver/transmission:latest
+    container_name: transmission
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    volumes:
+      - ${MEDIA_CONFIG_ROOT}/transmission:/config
+      - ${TV_ROOT}:/tv
+      - ${MOVIES_ROOT}:/movies
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ:-America/New_York}
+    restart: unless-stopped
+
+  transmission-config:
+    image: python:3.12-alpine
+    container_name: transmission-config
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+      - transmission
+    command:
+      - python
+      - /app/configure.py
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TRANSMISSION_RPC_URL=http://127.0.0.1:9091/transmission/rpc
+      - TV_DOWNLOAD_DIR=/tv/downloads
+      - MOVIES_DOWNLOAD_DIR=/movies/downloads
+    volumes:
+      - ${TRANSMISSION_CONFIG_ROOT:-/srv/transmission-config}/configure.py:/app/configure.py:ro
+      - ${TV_ROOT}:/tv
+      - ${MOVIES_ROOT}:/movies
+    restart: "no"
+
+  polly:
+    image: python:3.12-alpine
+    container_name: polly
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+      - transmission
+    command:
+      - python
+      - /app/polly.py
+    environment:
+      - GLUETUN_PORT_FILE=/tmp/gluetun/forwarded_port
+      - TRANSMISSION_RPC_URL=http://127.0.0.1:9091/transmission/rpc
+      - TRANSMISSION_RPC_USERNAME=${TRANSMISSION_RPC_USERNAME:-}
+      - TRANSMISSION_RPC_PASSWORD=${TRANSMISSION_RPC_PASSWORD:-}
+      - POLL_SECONDS=${POLLY_POLL_SECONDS:-10}
+    volumes:
+      - gluetun-port:/tmp/gluetun:ro
+      - ${POLLY_ROOT:-/srv/polly}/polly.py:/app/polly.py:ro
+    restart: unless-stopped
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      - ${MEDIA_CONFIG_ROOT}/prowlarr:/config
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    depends_on:
+      transmission-config:
+        condition: service_completed_successfully
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      - ${MEDIA_CONFIG_ROOT}/sonarr:/config
+      - ${TV_ROOT}:/tv
+    ports:
+      - "8989:8989"
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    depends_on:
+      transmission-config:
+        condition: service_completed_successfully
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${MEDIA_CONFIG_ROOT}/radarr:/config
+      - ${MOVIES_ROOT}:/movies
+    ports:
+      - "7878:7878"
+
+volumes:
+  gluetun-port:

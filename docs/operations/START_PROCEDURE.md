@@ -1,4 +1,4 @@
-# Shutdown Procedure
+# Start Procedure
 
 1. Open the deployed media directory.
 
@@ -26,20 +26,26 @@
      -f compose.staging.yaml)
    ```
 
-3. Display the current stack state.
+3. Validate the Compose configuration.
+
+   ```bash
+   "${COMPOSE[@]}" config --quiet
+   ```
+
+4. Start the stack.
+
+   ```bash
+   "${COMPOSE[@]}" up -d
+   ```
+
+5. Display the complete stack state.
 
    ```bash
    "${COMPOSE[@]}" ps -a
    ```
 
-4. Stop the stack.
+6. Display startup logs.
 
    ```bash
-   "${COMPOSE[@]}" stop
-   ```
-
-5. Display the stopped stack.
-
-   ```bash
-   "${COMPOSE[@]}" ps -a
+   "${COMPOSE[@]}" logs --tail=100
    ```

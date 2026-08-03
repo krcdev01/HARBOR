@@ -1,154 +1,402 @@
-# Deployment Plan
+# Production Deployment Plan
 
 ## Purpose
 
-This document describes the procedure to deploy HARBOR to my personal production environment.  This document is to be used as a baseline for a general deployment plan document in the future that is universally compatible with a single environmental deploy.
+This document describes the ordered procedure used to deploy HARBOR to the
+production server.
 
 ## Server Buildout Plan
 
-### Phase 0 - Prerequisite
+### Phase 0 - Prerequisites
 
-HARBOR is an AAR media streaming stack designed to be a turnkey-deploy on a sufficiently equipped home media server.  Minimum Requirements are yet to be determined, but development of this process is being done against two different devices:
-
-- An on-demand virtual machine running 2 cores and 8GB of RAM with no hardware graphics accelerator and 10GB staged mounts
-- An always-on hardware production server running a Ryzen 5 3600 with 48GB of ram and 29 total TB of drive space
-
-Regardless of the hardware configuration, the environment must be with the following installs:
+The production environment requires:
 
 - Ubuntu Server
-- Docker
+- Docker Engine and the Docker Compose plugin
+- Git
 - UFW
-- git
-- a shared service account for the AAR stack
+- NVIDIA drivers and the NVIDIA Container Toolkit
+- One deployment account identity shared by the HARBOR services for filesystem access
+- `/dev/net/tun` for Gluetun
+- A writable television mount at `/mnt/tv`
+- A writable movie mount at `/mnt/movies`
 
-Additionally, the following three mounts must exist:
+Before deployment, confirm the host prerequisites:
 
-- /mnt/movies
-- /mnt/tv
+```bash
+docker --version
+docker compose version
+git --version
+nvidia-smi
+docker info | grep -i nvidia
+ls -l /dev/net/tun
+findmnt /mnt/tv
+findmnt /mnt/movies
+```
 
-### - Phase 1 - Foundation/setup
+Do not continue until Docker is available, the NVIDIA runtime is registered,
+`/dev/net/tun` exists, and both production media mounts resolve to their
+expected storage.
 
-1. Pull down the HARBOR repository
+### Phase 1 - Foundation Setup
 
-   Make the workspace directory if it does not yet exist, then clone the HOMESERVER repository to your service account home directory:
+1. Pull down the HARBOR repository.
+
+   Create the workspace and clone the repository if it is not already present:
 
    ```bash
-   mkdir ~/workspace
-   
-   cd ~/workspace && git clone git@github.com:krcdev01/HARBOR.git
+   mkdir -p ~/workspace
+   cd ~/workspace
+   git clone git@github.com:krcdev01/HARBOR.git
    ```
 
-2. Acquire cloudflare token for external access (optional)
+   For an existing production checkout, update the `main` branch:
 
-   Create a new cloudflare tunnel on cloudflare.  Configure as follows:
+   ```bash
+   cd ~/workspace/HARBOR
+   git switch main
+   git pull --ff-only
+   git status --short
+   ```
+
+   Review and resolve any working-tree changes before continuing.
+
+2. Acquire the Cloudflare token for production external access.
+
+   Create or select the production Cloudflare Tunnel and configure:
+
    - Tunnel type: Cloudflared
-   - Tunnel name: jellyfin-cave-staging
-   - Device Operating System: Docker (Cloudflare will provide you with a command to run to pull down cloudflare with your provided token.  Copy this string for later)
-   - Subdomain: staging
-   - Domain: [EXTERNALURL].com
-   - service: [jellyfin](http://jellyfin:8096)
+   - Tunnel name: the production Jellyfin tunnel
+   - Device operating system: Docker
+   - Hostname: the production HARBOR hostname
+   - Service: `http://jellyfin:8096`
 
-   **Note: If this step has previously been done on a prior deployment and the cloudflare token was lost, the prior key must be deleted and recreated using the steps above.  Otherwise, you can retrieve the token and skip this step.**
+   Retain the generated tunnel token for the production environment file.
 
-### - Phase 2 - Media Stack Deployment
+### Phase 2 - Media Stack Installation
 
-1. Copy all of the contents in the infra/srv/ directory over to your server, /srv/ as the destination:
+1. Create the application and supporting-script directories.
 
    ```bash
-   sudo cp -r ~/workspace/HARBOR/infra/srv/* /srv/
+   sudo install -d -m 0755 \
+     /srv/media \
+     /srv/polly \
+     /srv/transmission-config
    ```
 
-2. In the /srv/media directory, rename and modify .env.staging.template, renaming it to .env.staging:
+2. Install the shared media stack and production override.
 
    ```bash
-   sudo mv /srv/media/.env.prod.template /srv/media/.env.prod && sudo nano /srv/media/.env.prod
+   sudo cp -a ~/workspace/HARBOR/apps/srv/media/. /srv/media/
    ```
 
-3. Edit .env.staging with the following changes:
-   - TZ-America/New_York
-   - JELLYFIN_PUBLISHED_SERVER_URL=[https://[EXTERNALURL].com][l1]
-   - CLOUDFLARED_TOKEN=[REPLACE_WTIH_TOKEN_FROM_P01S02]
+   This copies `compose.yaml`, `compose.prod.yaml`, the environment template,
+   and the related deployment files, including hidden files.
 
-4. Deploy the Media stack.
+3. Install Polly.
 
    ```bash
-    docker compose --env-file .env.prod -f compose.yaml -f compose.prod.yaml up -d
+   sudo install -m 0755 \
+     ~/workspace/HARBOR/infra/srv/polly/polly.py \
+     /srv/polly/polly.py
+   ```
+
+4. Install Transmission Config.
+
+   ```bash
+   sudo install -m 0755 \
+     ~/workspace/HARBOR/infra/srv/transmission/configure.py \
+     /srv/transmission-config/configure.py
+   ```
+
+5. Create the production environment file on a new deployment.
+
+   If `/srv/media/.env.prod` does not already exist, create it from the
+   template:
+
+   ```bash
+   sudo cp /srv/media/.env.prod.template /srv/media/.env.prod
+   sudo chown serveradmin:serveradmin /srv/media/.env.prod
+   sudo chmod 600 /srv/media/.env.prod
+   ```
+
+6. Edit the production environment file.
+
+   ```bash
+   sudo nano /srv/media/.env.prod
+   ```
+
+   Confirm the deployment account IDs before assigning `PUID` and `PGID`:
+
+   ```bash
+   id -u serveradmin
+   id -g serveradmin
+   ```
+
+   Use these same numeric IDs throughout the environment file. Transmission,
+   Transmission Config, Prowlarr, Sonarr, and Radarr must use the same account
+   identity so that downloaded files can be read, imported, hardlinked, and
+   removed across the stack.
+
+   Set every required value:
+
+   ```dotenv
+   TZ=America/New_York
+   TV_ROOT=/mnt/tv
+   MOVIES_ROOT=/mnt/movies
+   PUID=1000
+   PGID=1000
+   MEDIA_CONFIG_ROOT=/srv/media
+
+   JELLYFIN_PUBLISHED_SERVER_URL=https://[EXTERNALURL].com
+   CLOUDFLARED_TOKEN=replace-with-production-cloudflare-tunnel-token
+
+   VPN_SP=protonvpn
+   OPENVPN_USER=replace-with-openvpn-username
+   OPENVPN_PASSWORD=replace-with-openvpn-password
+
+   POLLY_ROOT=/srv/polly
+   POLLY_POLL_SECONDS=10
+   TRANSMISSION_RPC_USERNAME=
+   TRANSMISSION_RPC_PASSWORD=
+   TRANSMISSION_CONFIG_ROOT=/srv/transmission-config
+   ```
+
+7. Validate the production Compose configuration.
+
+   ```bash
+   cd /srv/media
+
+   sudo docker compose \
+     --env-file .env.prod \
+     -f compose.yaml \
+     -f compose.prod.yaml \
+     config --quiet
+   ```
+
+   Do not continue if Compose reports a configuration error.
+
+8. Pull the container images.
+
+   ```bash
+   sudo docker compose \
+     --env-file .env.prod \
+     -f compose.yaml \
+     -f compose.prod.yaml \
+     pull
+   ```
+
+   This installs the images for Jellyfin, Cloudflared, Gluetun, Transmission,
+   Transmission Config, Polly, Prowlarr, Sonarr, and Radarr.
+
+9. Stop the existing production stack.
+
+   ```bash
+   sudo docker compose \
+     --env-file .env.prod \
+     -f compose.yaml \
+     -f compose.prod.yaml \
+     down
+   ```
+
+   Do not use `--volumes`.
+
+10. Start the production stack.
+
+    ```bash
+    sudo docker compose \
+      --env-file .env.prod \
+      -f compose.yaml \
+      -f compose.prod.yaml \
+      up -d
     ```
 
-5. Confirm Jellyfin is up and reachable through configured addresses
+### Phase 3 - Container Validation
 
-   - Navigate to your local network server IP and confirm Jellyfin web UI is up.
-   - If configured, open a new browser instance and check the configured external URL set up in Cloudflare.
+1. Confirm the state of every container.
 
-6. Confirm Sonarr is up and reachable
+   ```bash
+   cd /srv/media
 
-   - Navigate to Sonarr at the server's local network address on port `8989`.
-   - Confirm that the Sonarr web interface loads.
-   - Complete the initial authentication setup if prompted and confirm that you can log in.
-
-7. Confirm Radarr is up and reachable
-
-   - Navigate to Radarr at the server's local network address on port 7878.
-   - Confirm that the Radarr web interface loads.
-   - Complete the initial authentication setup if prompted and confirm that you can log in.
-
-### - Phase 3 - Validation
-
-1. Set up Jellyfin
-
-   Jellyfin requires setting up the following in order to provide any service or value:
-
-   - An Admin User
-   - A Content Library
-   - A defined region and default language
-   - Whether or not to enable external connections
-
-   After this, the application will perform a content scan and metadata update of your configured libraries.  This will complete setup.
-
-2. Perform basic Sonarr setup
-
-   Sonarr requires initial authentication and library configuration before it can manage existing television content.
-
-   - Open Sonarr using the server's local network address on port `8989`.
-   - Configure the Sonarr authentication username and password if this was not completed during deployment.
-   - Log in using the configured credentials.
-   - Add the root folders containing the television libraries that Sonarr will manage.
-   - Import the existing series from those root folders.
-   - Confirm that Sonarr can see the expected series and access their files.
-
-   Automated download clients, indexers, quality profiles, and acquisition rules are configured separately and are outside the scope of this initial deployment procedure.
-
-3. Perform basic Radarr setup
-
-   Radarr requires initial authentication and library configuration before it can manage existing movie content.
-
-   - Open Radarr using the server's local network address on port 7878.
-   - Configure the Radarr authentication username and password if this was not completed during deployment.
-   - Log in using the configured credentials.
-   - Add the root folders containing the movie libraries that Radarr will manage.
-   - Import the existing movies from those root folders.
-   - Confirm that Radarr can see the expected movies and access their files.
-   - Open Settings → Metadata.
-   - Add and enable the Kodi/Emby metadata consumer.
-   - Enable movie metadata and movie images so that Radarr writes local NFO and artwork files alongside the movie files.
-   - Run a refresh and scan against the imported movies.
-   - Confirm that Radarr creates the expected NFO, poster, fanart, and related metadata files.
-
-   Automated download clients, indexers, quality profiles, and acquisition rules are configured separately and are outside the scope of this initial deployment procedure
-
-4. Play content to confirm jellyfin is behaving as expected
-
-   - It is highly reccomended to test in a web browser first.  This will allow you to turn on playback info on content and observe server playback behavior.
-   - Create a non-admin test user and exclude access to one or more libraries to confirm basic permissions are working
-   - A variety of content should be played; including content with multiple language and subtitle tracks
-   - Force content to transcode by scaling its resolution down to confirm server can perform server transcoding.
-
-5. Cleanup
-
-   Remove the staging workspace copy of the repository:
-
-   ```shell
-   rm -rf ~/workspace/HARBOR
+   sudo docker compose \
+     --env-file .env.prod \
+     -f compose.yaml \
+     -f compose.prod.yaml \
+     ps -a
    ```
 
-[l1]: https://www.github.com/krcdev01
+   Confirm:
+
+   - Gluetun becomes healthy.
+   - Jellyfin becomes healthy.
+   - Transmission, Polly, Prowlarr, Sonarr, Radarr, and Cloudflared remain up.
+   - Transmission Config finishes with `Exited (0)`.
+
+2. Confirm that Jellyfin received NVIDIA GPU access.
+
+   ```bash
+   sudo docker exec jellyfin nvidia-smi
+   ```
+
+   The command must display the production NVIDIA GPU without reporting a
+   runtime or device error.
+
+3. Confirm that Gluetun connected and obtained a forwarded peer port.
+
+   ```bash
+   sudo docker logs gluetun 2>&1 \
+     | grep -E 'port forwarded|allowed input port|writing port file' \
+     | tail -20
+   ```
+
+   The log must show a forwarded port, a matching firewall rule on `tun0`, and
+   the forwarded-port file being written.
+
+4. Confirm that Transmission and Prowlarr use Gluetun's network namespace.
+
+   ```bash
+   sudo docker inspect --format '{{.HostConfig.NetworkMode}}' transmission
+   sudo docker inspect --format '{{.HostConfig.NetworkMode}}' prowlarr
+   ```
+
+   Both results must begin with `container:`.
+
+5. Confirm that Transmission Config completed successfully.
+
+   ```bash
+   sudo docker logs transmission-config
+   ```
+
+   Confirm the download directories exist:
+
+   ```bash
+   ls -ld /mnt/tv/downloads /mnt/movies/downloads
+   ```
+
+6. Confirm that Polly synchronized Transmission's peer port.
+
+   ```bash
+   sudo docker logs --tail=50 polly
+   sudo docker exec gluetun cat /tmp/gluetun/forwarded_port
+   ```
+
+   The port reported by Polly must match the value in Gluetun's forwarded-port
+   file.
+
+7. Confirm write access to the production download locations.
+
+   First confirm that the LinuxServer containers resolved the shared identity
+   to the configured UID and GID:
+
+   ```bash
+   sudo docker exec transmission id abc
+   sudo docker exec prowlarr id abc
+   sudo docker exec sonarr id abc
+   sudo docker exec radarr id abc
+   ```
+
+   Each result must report the same configured UID and GID. Then run the
+   storage checks using that identity:
+
+   ```bash
+   sudo docker exec --user 1000:1000 transmission \
+     sh -c 'test -w /tv/downloads && test -w /movies/downloads'
+
+   sudo docker exec --user 1000:1000 sonarr \
+     sh -c 'test -w /tv && test -w /tv/downloads'
+
+   sudo docker exec --user 1000:1000 radarr \
+     sh -c 'test -w /movies && test -w /movies/downloads'
+   ```
+
+   Each command must exit without output and return status `0`.
+
+### Phase 4 - Application Connectivity
+
+1. Confirm that each local interface is reachable.
+
+   Open each address from a system on the production network:
+
+   ```text
+   Jellyfin:     http://library:8096
+   Transmission: http://library:18080
+   Prowlarr:     http://library:9696
+   Sonarr:       http://library:8989
+   Radarr:       http://library:7878
+   ```
+
+   Complete initial authentication where prompted and confirm that each
+   interface can be reopened with the configured credentials.
+
+2. Configure Sonarr to communicate with Transmission.
+
+   In Sonarr, open `Settings → Download Clients`, add Transmission, and set:
+
+   ```text
+   Host: gluetun
+   Port: 9091
+   URL Base: /transmission/
+   Category: blank
+   Directory: /tv/downloads
+   ```
+
+   Test the connection and save it only after the test succeeds.
+
+3. Configure Radarr to communicate with Transmission.
+
+   In Radarr, open `Settings → Download Clients`, add Transmission, and set:
+
+   ```text
+   Host: gluetun
+   Port: 9091
+   URL Base: /transmission/
+   Category: blank
+   Directory: /movies/downloads
+   ```
+
+   Test the connection and save it only after the test succeeds.
+
+4. Configure Prowlarr to communicate with Sonarr.
+
+   Retrieve the Sonarr API key from `Settings → General`. In Prowlarr, open
+   `Settings → Apps`, add Sonarr, and set its service address to:
+
+   ```text
+   http://sonarr:8989
+   ```
+
+   Enter the Sonarr API key, test the connection, and save it only after the
+   test succeeds.
+
+5. Configure Prowlarr to communicate with Radarr.
+
+   Retrieve the Radarr API key from `Settings → General`. In Prowlarr, open
+   `Settings → Apps`, add Radarr, and set its service address to:
+
+   ```text
+   http://radarr:7878
+   ```
+
+   Enter the Radarr API key, test the connection, and save it only after the
+   test succeeds.
+
+6. Confirm that the production tunnel reaches Jellyfin.
+
+   Open the production external URL configured in Cloudflare. Confirm that the
+   request reaches the production Jellyfin interface.
+
+### Phase 5 - Completion
+
+The production deployment is complete only after:
+
+1. Every long-running container is up.
+2. Jellyfin can access the NVIDIA GPU.
+3. Gluetun is healthy and has a forwarded port.
+4. Transmission and Prowlarr use Gluetun's network namespace.
+5. Transmission Config exits successfully.
+6. Polly synchronizes the forwarded port to Transmission.
+7. Transmission, Sonarr, and Radarr can write to their assigned production paths.
+8. Sonarr and Radarr successfully test their Transmission connections.
+9. Prowlarr successfully tests its Sonarr and Radarr connections.
+10. Each local web interface is reachable.
+11. The production Cloudflare URL reaches Jellyfin.
