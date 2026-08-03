@@ -35,6 +35,31 @@ services:
     depends_on:
       - jellyfin
 
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    init: true
+    user: "${PUID}:${PGID}"
+    restart: unless-stopped
+    depends_on:
+      - jellyfin
+      - sonarr
+      - radarr
+    environment:
+      - LOG_LEVEL=info
+      - TZ=${TZ:-America/New_York}
+      - PORT=5055
+    ports:
+      - "5055:5055"
+    volumes:
+      - ${MEDIA_CONFIG_ROOT}/seerr:/app/config
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      retries: 3
+
   gluetun:
     image: qmcgaw/gluetun:latest
     container_name: gluetun
