@@ -13,6 +13,7 @@ by the applications.
 |---|---|---|
 | Jellyfin configuration | `${MEDIA_CONFIG_ROOT}/jellyfin/config` | Required |
 | Jellyfin cache | `${MEDIA_CONFIG_ROOT}/jellyfin/cache` | Rebuildable |
+| Seerr configuration and database | `${MEDIA_CONFIG_ROOT}/seerr` | Required |
 | Transmission configuration and queue state | `${MEDIA_CONFIG_ROOT}/transmission` | Required |
 | Prowlarr configuration and database | `${MEDIA_CONFIG_ROOT}/prowlarr` | Required |
 | Sonarr configuration and database | `${MEDIA_CONFIG_ROOT}/sonarr` | Required |
@@ -40,6 +41,7 @@ Back up these directories:
 
 ```text
 /srv/media/jellyfin/config
+/srv/media/seerr
 /srv/media/transmission
 /srv/media/prowlarr
 /srv/media/sonarr

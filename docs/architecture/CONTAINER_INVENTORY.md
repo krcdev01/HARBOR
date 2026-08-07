@@ -12,6 +12,7 @@ definition.
 |---|---|---|---|---|---|
 | Jellyfin | `jellyfin/jellyfin:10.11` | `8096`, `8920` | `/config`, `/cache` | None | Serves the television and movie libraries |
 | Cloudflared | `cloudflare/cloudflared:latest` | Outbound tunnel | None | Jellyfin | Connects Jellyfin to the configured Cloudflare Tunnel |
+| Seerr | `ghcr.io/seerr-team/seerr:latest` | `5055` | `/app/config` | Jellyfin, Sonarr, Radarr | Provides discovery, requests, approval, and availability notifications |
 | Gluetun | `qmcgaw/gluetun:latest` | `18080` for Transmission, `9696` for Prowlarr | Shared forwarded-port volume | None | Provides the VPN network namespace, firewall, and forwarded peer port |
 | Transmission | `lscr.io/linuxserver/transmission:latest` | Through Gluetun | `/config` | Gluetun | Downloads releases to the television or movie storage pipeline |
 | Transmission Config | `python:3.12-alpine` | None | None | Gluetun, Transmission | Prepares the download directories and applies Transmission session policy |
@@ -28,6 +29,9 @@ definition.
   `/movies` so each download pipeline remains on its corresponding storage.
 - Sonarr mounts `${TV_ROOT}` at `/tv`.
 - Radarr mounts `${MOVIES_ROOT}` at `/movies`.
+- Seerr stores its configuration and database beneath
+  `${MEDIA_CONFIG_ROOT}/seerr`. It uses the stack's default Docker network and
+  reaches Jellyfin, Sonarr, and Radarr by service name.
 - Transmission Config mounts both media roots to prepare `/tv/downloads` and
   `/movies/downloads`.
 - Transmission and Prowlarr share Gluetun's network namespace. Their published

@@ -26,6 +26,7 @@ staging overrides.
 |---|---|
 | Jellyfin | Serves the organized television and movie libraries |
 | Cloudflared | Connects Jellyfin to its configured Cloudflare Tunnel |
+| Seerr | Accepts user requests, manages approval, submits approved media to Sonarr or Radarr, and reports availability |
 | Gluetun | Provides the VPN network namespace and firewall for download-related traffic |
 | Transmission | Downloads television and movie releases selected by Sonarr and Radarr |
 | Polly | Synchronizes Transmission's peer port with the port forwarded by the VPN provider |
@@ -36,7 +37,9 @@ staging overrides.
 
 Transmission, Polly, and Prowlarr share Gluetun's network namespace. Sonarr
 and Radarr communicate with Transmission through Gluetun while retaining
-direct access to their respective media storage paths.
+direct access to their respective media storage paths. Seerr uses the stack's
+default Docker network and communicates with Jellyfin, Sonarr, and Radarr by
+service name.
 
 ## Files
 
