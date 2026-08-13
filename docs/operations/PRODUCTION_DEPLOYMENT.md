@@ -71,6 +71,9 @@ expected storage.
    - Hostname: the production HARBOR hostname
    - Service: `http://jellyfin:8096`
 
+   Add a separate public hostname for the production request interface with
+   the service set to `http://seerr:5055`.
+
    Retain the generated tunnel token for the production environment file.
 
 ### Phase 2 - Media Stack Installation
@@ -133,10 +136,17 @@ expected storage.
    id -g serveradmin
    ```
 
-   Use these same numeric IDs throughout the environment file. Transmission,
-   Transmission Config, Prowlarr, Sonarr, and Radarr must use the same account
-   identity so that downloaded files can be read, imported, hardlinked, and
-   removed across the stack.
+   Use these same numeric IDs throughout the environment file. Seerr,
+   Transmission, Transmission Config, Prowlarr, Sonarr, and Radarr must use the
+   same account identity. Create Seerr's persistent directory with that
+   identity:
+
+   ```bash
+   sudo install -d -m 0755 \
+     -o "$(id -u serveradmin)" \
+     -g "$(id -g serveradmin)" \
+     /srv/media/seerr
+   ```
 
    Set every required value:
 
@@ -186,8 +196,8 @@ expected storage.
      pull
    ```
 
-   This installs the images for Jellyfin, Cloudflared, Gluetun, Transmission,
-   Transmission Config, Polly, Prowlarr, Sonarr, and Radarr.
+   This installs the images for Jellyfin, Cloudflared, Seerr, Gluetun,
+   Transmission, Transmission Config, Polly, Prowlarr, Sonarr, and Radarr.
 
 9. Stop the existing production stack.
 
@@ -228,7 +238,7 @@ expected storage.
    Confirm:
 
    - Gluetun becomes healthy.
-   - Jellyfin becomes healthy.
+   - Jellyfin and Seerr become healthy.
    - Transmission, Polly, Prowlarr, Sonarr, Radarr, and Cloudflared remain up.
    - Transmission Config finishes with `Exited (0)`.
 
@@ -319,6 +329,7 @@ expected storage.
 
    ```text
    Jellyfin:     http://library:8096
+   Seerr:        http://library:5055
    Transmission: http://library:18080
    Prowlarr:     http://library:9696
    Sonarr:       http://library:8989
@@ -380,10 +391,27 @@ expected storage.
    Enter the Radarr API key, test the connection, and save it only after the
    test succeeds.
 
-6. Confirm that the production tunnel reaches Jellyfin.
+6. Configure Seerr.
+
+   Sign in with a Jellyfin administrator account. Connect Seerr to Jellyfin at
+   `http://jellyfin:8096`, Sonarr at `sonarr:8989`, and Radarr at
+   `radarr:7878`. Select the production Jellyfin libraries, configure the
+   intended quality profiles and library root folders, enable service scans and
+   automatic searches, and run Seerr's initial library scan.
+
+   Set the Seerr Application URL to its production external hostname. Configure
+   ordinary users to request media without automatic approval and reserve
+   approval for an administrator or a user with Manage Requests permission.
+   Configure and test the required notification agents, including Media
+   Available notifications.
+
+7. Confirm the production tunnels reach Jellyfin and Seerr.
 
    Open the production external URL configured in Cloudflare. Confirm that the
    request reaches the production Jellyfin interface.
+
+   Open the production Seerr URL. Confirm that a Jellyfin user can sign in and
+   submit a request for administrative approval.
 
 ### Phase 5 - Completion
 
@@ -398,5 +426,7 @@ The production deployment is complete only after:
 7. Transmission, Sonarr, and Radarr can write to their assigned production paths.
 8. Sonarr and Radarr successfully test their Transmission connections.
 9. Prowlarr successfully tests its Sonarr and Radarr connections.
-10. Each local web interface is reachable.
-11. The production Cloudflare URL reaches Jellyfin.
+10. Seerr connects to Jellyfin, Sonarr, and Radarr; users can submit requests;
+    and approved requests enter the correct acquisition pipeline.
+11. Each local web interface is reachable.
+12. The production Cloudflare URLs reach Jellyfin and Seerr.

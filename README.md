@@ -11,6 +11,7 @@ HARBOR combines the following services into one Docker Compose deployment:
 |---|---|
 | Jellyfin | Streams the organized television and movie libraries locally and remotely |
 | Cloudflared | Publishes Jellyfin through an authenticated Cloudflare Tunnel |
+| Seerr | Provides media discovery, user requests, administrative approval, and availability notifications |
 | Gluetun | Routes download-related services through a VPN with firewall enforcement and port forwarding |
 | Transmission | Downloads releases selected by Sonarr and Radarr into separate television and movie pipelines |
 | Transmission Config | Creates the download directories, applies their ownership and permissions, and configures completed torrents to stop seeding |
@@ -51,7 +52,7 @@ A deployment host requires:
 - `/dev/net/tun` access for Gluetun
 - Writable television and movie storage mounts
 - VPN provider credentials with port-forwarding support
-- A Cloudflare Tunnel token for remote Jellyfin access
+- A Cloudflare Tunnel token for remote Jellyfin and Seerr access
 
 Production also requires NVIDIA drivers and the NVIDIA Container Toolkit.
 Staging requires read-only access to the production Samba shares used for

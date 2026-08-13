@@ -84,6 +84,9 @@ required mount resolves to its expected source.
    - Domain: the external HARBOR domain
    - Service: `http://jellyfin:8096`
 
+   Add a separate public hostname for the staging request interface with the
+   service set to `http://seerr:5055`.
+
    Retain the generated tunnel token for the staging environment file.
 
 ### Phase 2 - Media Stack Installation
@@ -146,10 +149,17 @@ required mount resolves to its expected source.
    id -g serveradmin
    ```
 
-   Use these same numeric IDs throughout the environment file. Transmission,
-   Transmission Config, Prowlarr, Sonarr, and Radarr must use the same account
-   identity so that downloaded files can be read, imported, hardlinked, and
-   removed across the stack.
+   Use these same numeric IDs throughout the environment file. Seerr,
+   Transmission, Transmission Config, Prowlarr, Sonarr, and Radarr must use the
+   same account identity. Create Seerr's persistent directory with that
+   identity:
+
+   ```bash
+   sudo install -d -m 0755 \
+     -o "$(id -u serveradmin)" \
+     -g "$(id -g serveradmin)" \
+     /srv/media/seerr
+   ```
 
    Set every required value:
 
@@ -197,8 +207,8 @@ required mount resolves to its expected source.
      pull
    ```
 
-   This installs the images for Jellyfin, Cloudflared, Gluetun, Transmission,
-   Transmission Config, Polly, Prowlarr, Sonarr, and Radarr.
+   This installs the images for Jellyfin, Cloudflared, Seerr, Gluetun,
+   Transmission, Transmission Config, Polly, Prowlarr, Sonarr, and Radarr.
 
 9. Stop an existing staging stack.
 
@@ -239,7 +249,7 @@ required mount resolves to its expected source.
    Confirm:
 
    - Gluetun becomes healthy.
-   - Jellyfin becomes healthy.
+   - Jellyfin and Seerr become healthy.
    - Transmission, Polly, Prowlarr, Sonarr, Radarr, and Cloudflared remain up.
    - Transmission Config finishes with `Exited (0)`.
 
@@ -321,6 +331,7 @@ required mount resolves to its expected source.
 
    ```text
    Jellyfin:     http://stageserver:8096
+   Seerr:        http://stageserver:5055
    Transmission: http://stageserver:18080
    Prowlarr:     http://stageserver:9696
    Sonarr:       http://stageserver:8989
@@ -382,10 +393,25 @@ required mount resolves to its expected source.
    Enter the Radarr API key, test the connection, and save it only after the
    test succeeds.
 
-6. Confirm that the staging tunnel reaches Jellyfin.
+6. Configure Seerr.
+
+   Sign in with a Jellyfin administrator account. Connect Seerr to Jellyfin at
+   `http://jellyfin:8096`, Sonarr at `sonarr:8989`, and Radarr at
+   `radarr:7878`. Select the staging Jellyfin libraries, enable scanning for
+   the Sonarr and Radarr services, and run Seerr's initial library scan.
+
+   Configure ordinary users to request media without automatic approval and
+   reserve request approval for an administrator or a user with Manage
+   Requests permission. If Discord notifications are enabled, test the
+   notification agent and include the Media Available event.
+
+7. Confirm that the staging tunnel reaches Jellyfin and Seerr.
 
    Open the staging external URL configured in Cloudflare. Confirm that the
    request reaches the staging Jellyfin interface.
+
+   Open the staging Seerr URL. Confirm that a Jellyfin test user can sign in
+   and submit a request.
 
 ### Phase 5 - Completion
 
@@ -399,5 +425,7 @@ The staging deployment is complete only after:
 6. Transmission, Sonarr, and Radarr can write to their assigned download paths.
 7. Sonarr and Radarr successfully test their Transmission connections.
 8. Prowlarr successfully tests its Sonarr and Radarr connections.
-9. Each local web interface is reachable.
-10. The staging Cloudflare URL reaches Jellyfin.
+9. Seerr connects to Jellyfin, Sonarr, and Radarr and completes the documented
+   request-and-approval test.
+10. Each local web interface is reachable.
+11. The staging Cloudflare URLs reach Jellyfin and Seerr.

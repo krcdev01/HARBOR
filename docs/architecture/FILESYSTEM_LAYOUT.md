@@ -56,6 +56,7 @@ Compose files used to operate the stack:
 ├── jellyfin/
 ├── prowlarr/
 ├── radarr/
+├── seerr/
 ├── sonarr/
 └── transmission/
 ```
