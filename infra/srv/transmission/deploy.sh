@@ -93,7 +93,7 @@ live=("${compose[@]}" -f "$live_dir/compose.yaml" -f "$live_dir/compose.prod.yam
 # Keep Gluetun and the rest of the stack running. Use already installed images.
 "${live[@]}" up -d --no-deps --no-build --pull never --force-recreate transmission radarr
 # Run the helper again even if the previous one-shot container already exited.
-"${live[@]}" run --rm --no-deps --no-build --pull never transmission-config
+"${live[@]}" run --rm --no-deps --pull never transmission-config
 
 # Verify actual write access as Transmission's application identity.
 docker exec --user "$uid:$gid" transmission sh -ec '
