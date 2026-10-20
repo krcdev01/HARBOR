@@ -110,6 +110,12 @@ services:
       - ${MEDIA_CONFIG_ROOT}/transmission:/config
       - ${TV_ROOT}:/tv
       - ${MOVIES_ROOT}:/movies
+      # Compatibility for movie torrents retaining the previous download path.
+      - type: bind
+        source: ${MOVIES_ROOT}/downloads
+        target: /downloads/complete
+        bind:
+          create_host_path: false
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -204,6 +210,12 @@ services:
     volumes:
       - ${MEDIA_CONFIG_ROOT}/radarr:/config
       - ${MOVIES_ROOT}:/movies
+      # Match Transmission's legacy movie path for completed-download imports.
+      - type: bind
+        source: ${MOVIES_ROOT}/downloads
+        target: /downloads/complete
+        bind:
+          create_host_path: false
     ports:
       - "7878:7878"
 

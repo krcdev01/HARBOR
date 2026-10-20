@@ -68,6 +68,7 @@ def configure_transmission() -> None:
             rpc_call(
                 "session-set",
                 {
+                    "download-dir": str(MOVIES_DOWNLOAD_DIR),
                     "incomplete-dir-enabled": False,
                     "watch-dir-enabled": False,
                     "seedRatioLimit": 0,
