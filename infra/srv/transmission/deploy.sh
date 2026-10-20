@@ -53,7 +53,7 @@ for name in ("transmission", "radarr"):
     legacy = mounted.get("/downloads/complete", {})
     require(legacy.get("source") == "/mnt/movies/downloads" and
             legacy.get("type") == "bind" and not legacy.get("read_only", False) and
-            legacy.get("bind", {}).get("create_host_path") is False,
+            legacy.get("bind", {}).get("create_host_path", False) is False,
             f"{name}: expected existing writable media-drive bind for /downloads/complete")
 require(mounts("transmission").get("/tv", {}).get("source") == "/mnt/tv",
         "Transmission: expected /mnt/tv -> /tv")
